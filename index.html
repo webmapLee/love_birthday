@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>彩丽宝贝生日快乐 💕</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- 主页面 -->
+    <div id="mainPage" class="page active">
+        <!-- 音乐启动覆盖层 -->
+        <div id="musicStartOverlay" class="music-start-overlay">
+            <div class="music-start-content">
+                <i class="fas fa-music music-icon"></i>
+                <p>点击任意位置开始播放音乐</p>
+            </div>
+        </div>
+        
+        <!-- 音乐控制按钮 -->
+        <div class="music-control">
+            <button id="musicToggle" class="btn-music" onclick="toggleMusic()">
+                <i class="fas fa-volume-up"></i>
+            </button>
+        </div>
+        
+        <div class="birthday-container">
+            <div class="hearts-bg"></div>
+            <div class="stars-bg"></div>
+
+            <div class="birthday-content text-center">
+                <div class="birthday-header mb-4">
+                    <h1 class="birthday-title">
+                        <i class="fas fa-heart text-danger"></i>
+                        亲爱的彩丽宝贝
+                        <i class="fas fa-heart text-danger"></i>
+                    </h1>
+                    <p class="birthday-date">农历1991年8月18日</p>
+                </div>
+
+                <div class="cake-section mb-4">
+                    <img src="images/cake.png" alt="生日蛋糕" class="birthday-cake">
+                    <div class="cake-glow"></div>
+                </div>
+
+                <div class="blessing-text mb-4">
+                    <h2 class="blessing-title">生日快乐！</h2>
+                    <p class="blessing-content">
+                        我最爱的彩丽，今天是你的生日<br>
+                        虽然我们相隔两地，但我的心永远陪伴着你<br>
+                        你辛苦了，一个人带娃又要工作<br>
+                        你是世界上最坚强最美丽的女人<br>
+                        愿你永远健康快乐，我们的爱情永远甜蜜 💕
+                    </p>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-romantic me-3" onclick="startPhotoShow()">
+                        <i class="fas fa-images"></i> 我们的回忆
+                    </button>
+                    <button class="btn btn-romantic" onclick="showMessageBoard()">
+                        <i class="fas fa-heart"></i> 留言板
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 烟花容器 -->
+        <div id="fireworks-container"></div>
+
+        <!-- 流星雨容器 -->
+        <div id="meteor-container"></div>
+
+        <!-- 爱意弹幕容器 -->
+        <div id="danmaku-container"></div>
+    </div>
+
+    <!-- 相册页面 -->
+    <div id="photoPage" class="page">
+        <div class="photo-container">
+            <div class="photo-header">
+                <button class="btn btn-outline-light" onclick="backToMain()">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <h3 class="text-white">我们的美好回忆</h3>
+                <button class="btn btn-outline-light" id="playPauseBtn" onclick="togglePlayPause()">
+                    <i class="fas fa-pause"></i>
+                </button>
+            </div>
+
+            <div class="photo-display">
+                <div class="photo-card">
+                    <img id="currentPhoto" src="" alt="回忆照片">
+                    <div class="photo-info">
+                        <p id="photoDate"></p>
+                        <p id="photoDescription"></p>
+                    </div>
+                    <!-- 转场遮罩层 -->
+                    <div class="transition-overlay" id="transitionOverlay"></div>
+                </div>
+            </div>
+
+            <div class="photo-controls">
+                <div class="progress-bar">
+                    <div class="progress" id="photoProgress"></div>
+                </div>
+                <p class="text-white text-center mt-2">
+                    <span id="currentIndex">1</span> / <span id="totalPhotos">0</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 留言板页面 -->
+    <div id="messagePage" class="page">
+        <div class="message-container">
+            <div class="message-header">
+                <button class="btn btn-outline-light" onclick="backToMain()">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <h3 class="text-white">给彩丽的话</h3>
+            </div>
+
+            <div class="message-content">
+                <div class="message-input-area">
+                    <textarea id="messageInput" class="form-control" rows="4" placeholder="写下你想对彩丽说的话..."></textarea>
+                    <div class="message-actions mt-3">
+                        <button class="btn btn-romantic me-2" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i> 发送
+                        </button>
+                        <button class="btn btn-gift me-2" onclick="sendGift()">
+                            <i class="fas fa-gift"></i> 送礼物
+                        </button>
+                        <button class="btn btn-emoji" onclick="sendEmoji()">
+                            <i class="fas fa-smile"></i> 表情
+                        </button>
+                    </div>
+                </div>
+
+                <div class="messages-list" id="messagesList">
+                    <!-- 留言列表 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音频播放器 -->
+    <audio id="bgMusic" loop autoplay muted>
+        <source src="musics/生日快乐.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="photoMusic">
+        <source src="" type="audio/mpeg">
+    </audio>
+
+    <!-- 脚本 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="photos.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
