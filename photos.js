@@ -321,11 +321,6 @@ const actualPhotos = [
         description: '平凡生活中的小确幸 😊'
     },
     {
-        src: 'images/pictures/2021/84ec64c77b29d2e364e7f598390f68b9.JPG.jpeg',
-        date: '2021年 - 成长',
-        description: '平凡生活中的小确幸 😊'
-    },
-    {
         src: 'images/pictures/2021/1628926932235.jpeg',
         date: '2021年 - 成长',
         description: '平凡生活中的小确幸 😊'
@@ -337,11 +332,6 @@ const actualPhotos = [
     },
     {
         src: 'images/pictures/2021/1622887468440_1716214085727_51.jpeg',
-        date: '2021年 - 成长',
-        description: '平凡生活中的小确幸 😊'
-    },
-    {
-        src: 'images/pictures/2021/20250520-212819.png',
         date: '2021年 - 成长',
         description: '平凡生活中的小确幸 😊'
     },
@@ -556,7 +546,7 @@ const actualPhotos = [
 function loadActualPhotos() {
     photos = actualPhotos;
     $('#totalPhotos').text(photos.length);
-    
+
     // 预加载图片
     photos.forEach(photo => {
         const img = new Image();
