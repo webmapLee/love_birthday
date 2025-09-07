@@ -547,9 +547,17 @@ function loadActualPhotos() {
     photos = actualPhotos;
     $('#totalPhotos').text(photos.length);
 
-    // 预加载图片
-    photos.forEach(photo => {
+    // 预加载前 5 张图片，降低首屏带宽消耗
+    const preloadCount = Math.min(5, photos.length);
+    for (let i = 0; i < preloadCount; i++) {
+        const src = photos[i].src;
         const img = new Image();
-        img.src = photo.src;
-    });
+        // 与 script.js 的逻辑保持一致，尝试使用 webp 构建产物
+        try {
+            const webpCandidate = 'build/' + src.replace(/\.(jpg|jpeg|png|heic)$/i, '.webp');
+            img.src = webpCandidate;
+        } catch (e) {
+            img.src = src;
+        }
+    }
 }

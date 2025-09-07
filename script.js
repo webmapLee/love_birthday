@@ -170,7 +170,17 @@ function showPhoto(index) {
 
     // 延迟后更换图片并添加转场效果
     setTimeout(() => {
-        photoImg.attr('src', photo.src);
+        // 优先尝试构建后的 webp 资源，失败则回退到原图
+        const webpCandidate = getWebpCandidate(photo.src);
+        photoImg.off('error');
+        photoImg.removeAttr('data-tried-fallback');
+        photoImg.on('error', function () {
+            if (photoImg.attr('data-tried-fallback') === '1') return; // 已经回退过
+            photoImg.attr('data-tried-fallback', '1');
+            photoImg.attr('src', photo.src);
+        });
+        photoImg.attr('src', webpCandidate);
+
         $('#photoDate').text(photo.date);
         $('#photoDescription').text(photo.description);
         $('#currentIndex').text(index + 1);
@@ -226,9 +236,23 @@ function playPhotoMusic() {
     bgMusic.pause();
     bgMusic.currentTime = 0;
 
-    // 播放照片音乐
-    photoMusic.src = musicList[currentMusicIndex];
-    photoMusic.volume = 0.5;
+    // 选择最优音频资源并设置回退
+    const original = musicList[currentMusicIndex];
+    const candidates = getOptimizedMusicCandidates(original);
+
+    let idx = 0;
+    function tryPlayNext() {
+        if (idx >= candidates.length) {
+            console.log('所有音频候选播放失败，放弃本首。');
+            return;
+        }
+        photoMusic.src = candidates[idx++];
+        photoMusic.play().catch(e => {
+            console.log('播放失败，尝试下一个候选:', e);
+            // 小延时避免连续错误导致阻塞
+            setTimeout(tryPlayNext, 50);
+        });
+    }
 
     // 只在第一次设置音乐结束监听器，避免重复设置
     if (!photoMusic.hasAttribute('data-listener-set')) {
@@ -239,9 +263,14 @@ function playPhotoMusic() {
             console.log('音乐播放结束，切换到第', currentMusicIndex + 1, '首音乐');
             playPhotoMusic();
         };
+        // 出错时尝试下一个候选源
+        photoMusic.onerror = function () {
+            tryPlayNext();
+        };
     }
 
-    photoMusic.play().catch(e => console.log('照片音乐播放失败:', e));
+    photoMusic.volume = 0.5;
+    tryPlayNext();
 }
 
 // 暂停/继续播放
@@ -509,3 +538,29 @@ $('<style>').text(`
 $(document).ready(function () {
     addBackgroundAnimations();
 });
+
+// 构造图片的 WebP 优先路径（构建产物）
+function getWebpCandidate(originalSrc) {
+    try {
+        // 仅处理 images/pictures 下的资源
+        if (!originalSrc || originalSrc.indexOf('images/pictures/') !== 0) return originalSrc;
+        const webpPath = 'build/' + originalSrc.replace(/\.(jpg|jpeg|png|heic)$/i, '.webp');
+        return webpPath;
+    } catch (e) {
+        return originalSrc;
+    }
+}
+
+// 根据浏览器支持与资源可用性选择压缩音频候选
+function getOptimizedMusicCandidates(originalPath) {
+    const audio = document.createElement('audio');
+    const base = originalPath.replace(/\.[^/.]+$/, '');
+    const m4a = 'build/' + base + '.m4a';
+    const ogg = 'build/' + base + '.ogg';
+    const candidates = [];
+    // 按浏览器支持与优先级添加
+    if (audio.canPlayType('audio/mp4; codecs="mp4a.40.2"')) candidates.push(m4a);
+    if (audio.canPlayType('audio/ogg; codecs="vorbis"')) candidates.push(ogg);
+    candidates.push(originalPath);
+    return candidates;
+}

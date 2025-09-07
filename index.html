@@ -20,14 +20,14 @@
                 <p>点击任意位置开始播放音乐</p>
             </div>
         </div>
-        
+
         <!-- 音乐控制按钮 -->
         <div class="music-control">
             <button id="musicToggle" class="btn-music" onclick="toggleMusic()">
                 <i class="fas fa-volume-up"></i>
             </button>
         </div>
-        
+
         <div class="birthday-container">
             <div class="hearts-bg"></div>
             <div class="stars-bg"></div>
@@ -94,7 +94,7 @@
 
             <div class="photo-display">
                 <div class="photo-card">
-                    <img id="currentPhoto" src="" alt="回忆照片">
+                    <img id="currentPhoto" src="" alt="回忆照片" decoding="async" loading="eager" fetchpriority="high">
                     <div class="photo-info">
                         <p id="photoDate"></p>
                         <p id="photoDescription"></p>
