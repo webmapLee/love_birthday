@@ -3,6 +3,7 @@ let currentPhotoIndex = 0;
 let photos = [];
 let isPlaying = false;
 let photoInterval;
+let photoSwiper = null; // Swiper实例
 let musicList = [
     'musics/01-Take Me To Your Heart.mp3',
     'musics/02-最美的期待.mp3',
@@ -19,15 +20,206 @@ const loveMessages = [
     '永远爱你 💖',
     '我的宝贝 👸',
     '想你了 💭',
-    '你最美丽 ✨',
-    '我们的爱情 💑',
-    '生日快乐 🎂',
-    '幸福永远 🍀',
-    '甜蜜蜜 🍯'
+    '你是最美的 🌹',
+    '爱你到永远 💝',
+    '我的小公主 👑',
+    '甜蜜的回忆 🍯',
+    '幸福的时光 ✨'
 ];
+
+// 动态背景类
+class DynamicBackground {
+    constructor() {
+        this.canvas = document.querySelector('.background-canvas');
+        if (!this.canvas) return;
+        
+        this.ctx = this.canvas.getContext('2d');
+        this.discs = [];
+        this.lines = [];
+        this.particles = [];
+        
+        this.init();
+    }
+    
+    init() {
+        this.setSize();
+        this.setDiscs();
+        this.setLines();
+        this.setParticles();
+        this.bindEvents();
+        this.animate();
+    }
+    
+    setSize() {
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width;
+        this.canvas.height = rect.height;
+        this.rect = { width: rect.width, height: rect.height };
+    }
+    
+    setDiscs() {
+        this.discs = [];
+        
+        this.startDisc = {
+            x: this.rect.width * 0.5,
+            y: this.rect.height * 0.45,
+            w: this.rect.width * 0.75,
+            h: this.rect.height * 0.7
+        };
+        
+        this.endDisc = {
+            x: this.rect.width * 0.5,
+            y: this.rect.height * 0.95,
+            w: 0,
+            h: 0
+        };
+        
+        const totalDiscs = 100;
+        
+        for (let i = 0; i < totalDiscs; i++) {
+            const p = i / totalDiscs;
+            const disc = this.tweenDisc({ p });
+            this.discs.push(disc);
+        }
+    }
+    
+    setLines() {
+        this.lines = [];
+        const totalLines = 50;
+        const linesAngle = (Math.PI * 2) / totalLines;
+        
+        for (let i = 0; i < totalLines; i++) {
+            this.lines.push([]);
+        }
+        
+        this.discs.forEach((disc) => {
+            for (let i = 0; i < totalLines; i++) {
+                const angle = i * linesAngle;
+                const p = {
+                    x: disc.x + Math.cos(angle) * disc.w,
+                    y: disc.y + Math.sin(angle) * disc.h
+                };
+                this.lines[i].push(p);
+            }
+        });
+    }
+    
+    setParticles() {
+        this.particles = [];
+        const totalParticles = 50;
+        
+        for (let i = 0; i < totalParticles; i++) {
+            this.particles.push({
+                x: Math.random() * this.rect.width,
+                y: this.rect.height + Math.random() * 100,
+                vy: 0.5 + Math.random(),
+                size: 1 + Math.random() * 2,
+                opacity: Math.random()
+            });
+        }
+    }
+    
+    tweenDisc(disc) {
+        const easeInExpo = (t) => t === 0 ? 0 : Math.pow(2, 10 * (t - 1));
+        
+        disc.x = this.startDisc.x + (this.endDisc.x - this.startDisc.x) * disc.p;
+        disc.y = this.startDisc.y + (this.endDisc.y - this.startDisc.y) * easeInExpo(disc.p);
+        disc.w = this.startDisc.w + (this.endDisc.w - this.startDisc.w) * disc.p;
+        disc.h = this.startDisc.h + (this.endDisc.h - this.startDisc.h) * disc.p;
+        
+        return disc;
+    }
+    
+    drawDiscs() {
+        this.ctx.strokeStyle = 'rgba(255, 107, 107, 0.3)';
+        this.ctx.lineWidth = 1;
+        
+        this.discs.forEach((disc, i) => {
+            if (i % 5 !== 0) return;
+            
+            this.ctx.beginPath();
+            this.ctx.ellipse(disc.x, disc.y, disc.w, disc.h, 0, 0, Math.PI * 2);
+            this.ctx.stroke();
+        });
+    }
+    
+    drawLines() {
+        this.ctx.strokeStyle = 'rgba(255, 107, 107, 0.2)';
+        this.ctx.lineWidth = 1;
+        
+        this.lines.forEach((line) => {
+            this.ctx.beginPath();
+            line.forEach((point, i) => {
+                if (i === 0) {
+                    this.ctx.moveTo(point.x, point.y);
+                } else {
+                    this.ctx.lineTo(point.x, point.y);
+                }
+            });
+            this.ctx.stroke();
+        });
+    }
+    
+    drawParticles() {
+        this.particles.forEach((particle) => {
+            this.ctx.fillStyle = `rgba(255, 107, 107, ${particle.opacity})`;
+            this.ctx.beginPath();
+            this.ctx.rect(particle.x, particle.y, particle.size, particle.size);
+            this.ctx.fill();
+        });
+    }
+    
+    updateDiscs() {
+        this.discs.forEach((disc) => {
+            disc.p = (disc.p + 0.001) % 1;
+            this.tweenDisc(disc);
+        });
+    }
+    
+    updateParticles() {
+        this.particles.forEach((particle) => {
+            particle.y -= particle.vy;
+            if (particle.y < -10) {
+                particle.y = this.rect.height + 10;
+                particle.x = Math.random() * this.rect.width;
+            }
+        });
+    }
+    
+    animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        this.updateDiscs();
+        this.updateParticles();
+        
+        this.drawDiscs();
+        this.drawLines();
+        this.drawParticles();
+        
+        // 重新计算线条位置
+        this.setLines();
+        
+        requestAnimationFrame(() => this.animate());
+    }
+    
+    bindEvents() {
+        window.addEventListener('resize', () => {
+            this.setSize();
+            this.setDiscs();
+            this.setLines();
+            this.setParticles();
+        });
+    }
+}
+
+// 初始化动态背景
+let dynamicBackground;
 
 // 页面初始化
 $(document).ready(function () {
+    // 初始化动态背景
+    dynamicBackground = new DynamicBackground();
+    
     // 加载照片列表
     loadPhotos();
 
@@ -37,24 +229,29 @@ $(document).ready(function () {
     // 初始化留言板
     initMessageBoard();
 
-    // 添加音乐启动覆盖层点击事件
-    $('#musicStartOverlay').on('click', function () {
+    // 使用事件委托添加音乐启动覆盖层点击事件
+    $(document).on('click', '#musicStartOverlay', function () {
+        console.log('覆盖层被点击');
         startMusicAndHideOverlay();
     });
 });
 
 // 启动音乐并隐藏覆盖层
 function startMusicAndHideOverlay() {
+    console.log('点击了音乐启动覆盖层');
+
     const bgMusic = document.getElementById('bgMusic');
+
+    // 先隐藏覆盖层
+    $('#musicStartOverlay').fadeOut(500);
 
     bgMusic.volume = 0.3;
     bgMusic.muted = false;
+
     bgMusic.play().then(() => {
-        $('#musicStartOverlay').fadeOut(500);
         console.log('音乐播放成功');
     }).catch(e => {
         console.log('音乐播放失败:', e);
-        $('#musicStartOverlay').fadeOut(500);
     });
 }
 
@@ -106,35 +303,100 @@ async function loadPhotos() {
         if (typeof loadActualPhotos === 'function') {
             loadActualPhotos();
         } else {
-            // 备用照片数据
+            console.log('loadActualPhotos 函数未找到，使用默认照片');
             photos = [
-                {
-                    src: 'images/pictures/2022/IMG20220508181824.jpg',
-                    date: '2022年 - 温馨时光',
-                    description: '平凡的日子里，你的笑容最珍贵 😊'
-                },
-                {
-                    src: 'images/pictures/2023/1682849222435.jpeg',
-                    date: '2023年 - 成长足迹',
-                    description: '看着你和孩子一起成长，我很幸福 🌱'
-                },
-                {
-                    src: 'images/pictures/2024/1709734635000_1727067322117_41.jpeg',
-                    date: '2024年 - 坚强的你',
-                    description: '一个人带娃的你，是我心中的超人 💪'
-                },
-                {
-                    src: 'images/pictures/2025/mmexport1738832801588.jpg',
-                    date: '2025年 - 最新回忆',
-                    description: '新的一年，我们的爱情依然甜蜜 🍯'
-                }
+                { src: 'images/default.jpg', date: '默认照片', description: '请添加照片数据' }
             ];
             $('#totalPhotos').text(photos.length);
         }
     } catch (error) {
-        console.log('加载照片失败:', error);
+        console.error('加载照片失败:', error);
+        photos = [
+            { src: 'images/default.jpg', date: '默认照片', description: '加载失败' }
+        ];
+        $('#totalPhotos').text(photos.length);
     }
 }
+
+// 初始化Swiper轮播
+function initPhotoSwiper() {
+    // 先销毁已存在的Swiper实例
+    if (photoSwiper) {
+        photoSwiper.destroy(true, true);
+    }
+
+    // 生成Swiper slides
+    const swiperWrapper = document.getElementById('photoSwiperWrapper');
+    swiperWrapper.innerHTML = '';
+
+    photos.forEach((photo, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'swiper-slide';
+        slide.innerHTML = `<img src="${getWebpCandidate(photo.src)}" alt="${photo.description}" onerror="this.src='${photo.src}'">`;
+        swiperWrapper.appendChild(slide);
+    });
+
+    // 初始化Swiper
+    photoSwiper = new Swiper('.photo-swiper', {
+        slidesPerView: window.innerWidth <= 768 ? 1 : 3, // 手机端显示1张，桌面端显示3张
+        spaceBetween: 30,
+        centeredSlides: true,
+        loop: true,
+        autoplay: {
+            delay: 4000,
+            disableOnInteraction: false,
+        },
+        breakpoints: {
+            768: {
+                slidesPerView: 3,
+            },
+            480: {
+                slidesPerView: 1,
+            }
+        },
+        on: {
+            slideChange: function () {
+                const realIndex = this.realIndex;
+                currentPhotoIndex = realIndex;
+                updatePhotoInfo(realIndex);
+                updateProgress(realIndex);
+            }
+        }
+    });
+
+    // 初始化显示第一张照片信息
+    if (photos.length > 0) {
+        updatePhotoInfo(0);
+        updateProgress(0);
+    }
+}
+
+// 更新照片信息
+function updatePhotoInfo(index) {
+    if (index >= 0 && index < photos.length) {
+        const photo = photos[index];
+        $('#photoDate').text(photo.date);
+        $('#photoDescription').text(photo.description);
+        $('#currentIndex').text(index + 1);
+    }
+}
+
+// 更新进度条
+function updateProgress(index) {
+    const progress = ((index + 1) / photos.length) * 100;
+    $('#photoProgress').css('width', progress + '%');
+}
+//     switchPage('photoPage');
+
+//     // 停止生日快乐歌曲
+//     const bgMusic = document.getElementById('bgMusic');
+//     bgMusic.pause();
+
+//     currentPhotoIndex = 0;
+//     currentMusicIndex = 0;
+//     showPhoto(currentPhotoIndex);
+//     startAutoPlay();
+// }
 
 // 开始照片展示
 function startPhotoShow() {
@@ -144,10 +406,11 @@ function startPhotoShow() {
     const bgMusic = document.getElementById('bgMusic');
     bgMusic.pause();
 
-    currentPhotoIndex = 0;
-    currentMusicIndex = 0;
-    showPhoto(currentPhotoIndex);
-    startAutoPlay();
+    // 初始化Swiper轮播
+    setTimeout(() => {
+        initPhotoSwiper();
+        startAutoPlay();
+    }, 100);
 }
 
 // 显示照片
@@ -175,7 +438,7 @@ function showPhoto(index) {
         photoImg.off('error');
         photoImg.removeAttr('data-tried-fallback');
         photoImg.on('error', function () {
-            if (photoImg.attr('data-tried-fallback') === '1') return; // 已经回退过
+            if (photoImg.attr('data-tried-fallback') === '1') return;
             photoImg.attr('data-tried-fallback', '1');
             photoImg.attr('src', photo.src);
         });
@@ -209,22 +472,54 @@ function startAutoPlay() {
     if (isPlaying) return;
 
     isPlaying = true;
-    $('#playPauseBtn i').removeClass('fa-play').addClass('fa-pause');
 
     // 播放对应的音乐
     playPhotoMusic();
 
-    // 计算每张照片的显示时间（根据音乐时长和照片数量）
-    const photoDisplayTime = 8000; // 8秒每张照片
+    // 启动Swiper自动播放
+    if (photoSwiper && photoSwiper.autoplay) {
+        photoSwiper.autoplay.start();
+    }
+}
 
-    photoInterval = setInterval(() => {
-        currentPhotoIndex++;
-        if (currentPhotoIndex >= photos.length) {
-            currentPhotoIndex = 0;
-            // 移除音乐切换逻辑，让音乐完全由onended事件控制
-        }
-        showPhoto(currentPhotoIndex);
-    }, photoDisplayTime);
+// 暂停自动播放
+function pauseAutoPlay() {
+    isPlaying = false;
+
+    // 停止Swiper自动播放
+    if (photoSwiper && photoSwiper.autoplay) {
+        photoSwiper.autoplay.stop();
+    }
+}
+
+// 暂停/继续播放
+function togglePlayPause() {
+    const playIcon = $('.play-icon');
+    const pauseIcon = $('.pause-icon');
+
+    if (isPlaying) {
+        pauseAutoPlay();
+        playIcon.show();
+        pauseIcon.hide();
+    } else {
+        startAutoPlay();
+        playIcon.hide();
+        pauseIcon.show();
+    }
+}
+
+// 上一张照片
+function previousPhoto() {
+    if (photoSwiper) {
+        photoSwiper.slidePrev();
+    }
+}
+
+// 下一张照片
+function nextPhoto() {
+    if (photoSwiper) {
+        photoSwiper.slideNext();
+    }
 }
 
 // 播放照片音乐
@@ -236,49 +531,51 @@ function playPhotoMusic() {
     bgMusic.pause();
     bgMusic.currentTime = 0;
 
-    // 选择最优音频资源并设置回退
-    const original = musicList[currentMusicIndex];
-    const candidates = getOptimizedMusicCandidates(original);
-
-    let idx = 0;
-    function tryPlayNext() {
-        if (idx >= candidates.length) {
-            console.log('所有音频候选播放失败，放弃本首。');
-            return;
-        }
-        photoMusic.src = candidates[idx++];
-        photoMusic.play().catch(e => {
-            console.log('播放失败，尝试下一个候选:', e);
-            // 小延时避免连续错误导致阻塞
-            setTimeout(tryPlayNext, 50);
-        });
-    }
-
-    // 只在第一次设置音乐结束监听器，避免重复设置
-    if (!photoMusic.hasAttribute('data-listener-set')) {
-        photoMusic.setAttribute('data-listener-set', 'true');
-        photoMusic.onended = function () {
-            // 切换到下一首音乐
-            currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
-            console.log('音乐播放结束，切换到第', currentMusicIndex + 1, '首音乐');
-            playPhotoMusic();
-        };
-        // 出错时尝试下一个候选源
-        photoMusic.onerror = function () {
-            tryPlayNext();
-        };
-    }
-
+    // 播放照片音乐
+    photoMusic.src = musicList[currentMusicIndex];
     photoMusic.volume = 0.5;
-    tryPlayNext();
+
+    // 添加音乐结束监听
+    photoMusic.onended = function () {
+        // 切换到下一首音乐
+        currentMusicIndex = (currentMusicIndex + 1) % musicList.length;
+        playPhotoMusic();
+    };
+
+    photoMusic.play().catch(e => console.log('照片音乐播放失败:', e));
 }
 
-// 暂停/继续播放
-function togglePlayPause() {
-    if (isPlaying) {
-        pauseAutoPlay();
+// 音乐开关
+function togglePhotoMusic() {
+    const photoMusic = document.getElementById('photoMusic');
+    const musicOn = $('.music-on');
+    const musicOff = $('.music-off');
+
+    if (photoMusic.paused) {
+        photoMusic.play();
+        musicOn.show();
+        musicOff.hide();
     } else {
-        startAutoPlay();
+        photoMusic.pause();
+        musicOn.hide();
+        musicOff.show();
+    }
+}
+
+// 显示爱心特效
+function showLove() {
+    // 创建多个爱心特效
+    for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+            createFirework(
+                Math.random() * window.innerWidth,
+                Math.random() * window.innerHeight
+            );
+            createDanmaku(
+                Math.random() * window.innerWidth,
+                Math.random() * window.innerHeight
+            );
+        }, i * 200);
     }
 }
 
@@ -286,10 +583,6 @@ function togglePlayPause() {
 function pauseAutoPlay() {
     isPlaying = false;
     clearInterval(photoInterval);
-    $('#playPauseBtn i').removeClass('fa-pause').addClass('fa-play');
-
-    const photoMusic = document.getElementById('photoMusic');
-    photoMusic.pause();
 }
 
 // 页面切换
@@ -297,18 +590,11 @@ function switchPage(pageId) {
     $('.page').removeClass('active');
     $('#' + pageId).addClass('active');
 
-    // 如果切换到主页面，恢复背景音乐
+    // 如果切换到主页面，播放生日音乐
     if (pageId === 'mainPage') {
+        playBirthdayMusic();
+        // 停止照片播放
         pauseAutoPlay();
-        const bgMusic = document.getElementById('bgMusic');
-        const photoMusic = document.getElementById('photoMusic');
-
-        // 停止相册音乐
-        photoMusic.pause();
-        photoMusic.currentTime = 0;
-
-        // 播放生日音乐
-        bgMusic.play().catch(e => console.log('背景音乐播放失败:', e));
     }
 }
 
@@ -317,7 +603,163 @@ function backToMain() {
     switchPage('mainPage');
 }
 
-// 显示留言板
+// 显示照片墙页面
+function showPhotoWall() {
+    switchPage('photoWallPage');
+    
+    // 停止生日快乐歌曲
+    const bgMusic = document.getElementById('bgMusic');
+    bgMusic.pause();
+    
+    // 初始化照片墙
+    setTimeout(() => {
+        initPhotoWall();
+    }, 100);
+}
+
+// 初始化照片墙
+function initPhotoWall() {
+    const aiPhotos = photos.filter(photo => photo.src.includes('AI写真'));
+    
+    if (aiPhotos.length === 0) {
+        console.log('没有找到AI写真照片');
+        return;
+    }
+    
+    const sphere = document.getElementById('photoSphere');
+    sphere.innerHTML = '';
+    
+    // 生成照片墙项目
+    aiPhotos.forEach((photo, index) => {
+        const x = (index % 5) * 2 - 4; // -4 到 4
+        const y = Math.floor(index / 5) * 2 - 2; // -2 到 2
+        
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.setAttribute('data-src', photo.src);
+        item.setAttribute('data-item', `${x},${y}`);
+        item.setAttribute('data-item-size', '2,2');
+        item.style.setProperty('--offset-x', x);
+        item.style.setProperty('--offset-y', y);
+        item.style.setProperty('--item-size-x', 2);
+        item.style.setProperty('--item-size-y', 2);
+        
+        const imageDiv = document.createElement('div');
+        imageDiv.className = 'item__image';
+        
+        const img = document.createElement('img');
+        img.src = getWebpCandidate(photo.src);
+        img.draggable = false;
+        img.onerror = function() {
+            this.src = photo.src;
+        };
+        
+        imageDiv.appendChild(img);
+        item.appendChild(imageDiv);
+        sphere.appendChild(item);
+    });
+    
+    // 初始化3D球体交互
+    initSphereInteraction();
+}
+
+// 初始化3D球体交互
+function initSphereInteraction() {
+    const MAX_POLAR_ROT_DEG = 30;
+    const PAN_SENSITIVITY = 18;
+    const TRANSITION_DUR_MS = 300;
+    
+    const DOM = {
+        sphere: document.querySelector('#photoSphere'),
+        main: document.querySelector('.photo-wall-main'),
+        items: document.querySelectorAll('.item__image'),
+        frame: document.querySelector('.frame'),
+        viewer: document.querySelector('.viewer'),
+        scrim: document.querySelector('.scrim'),
+    };
+    
+    const state = {
+        rotation: { x: 0, y: 0 },
+        startRotation: { x: 0, y: 0 },
+        isDragging: false
+    };
+    
+    const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+    
+    const applyTransform = () => {
+        DOM.sphere.style.transform = `translateZ(calc(var(--radius) * -1)) rotateX(${state.rotation.x}deg) rotateY(${state.rotation.y}deg)`;
+    };
+    
+    // 鼠标/触摸事件处理
+    let isPointerDown = false;
+    let startX = 0, startY = 0;
+    
+    const handlePointerDown = (e) => {
+        isPointerDown = true;
+        state.isDragging = false;
+        startX = e.clientX || e.touches[0].clientX;
+        startY = e.clientY || e.touches[0].clientY;
+        state.startRotation.x = state.rotation.x;
+        state.startRotation.y = state.rotation.y;
+    };
+    
+    const handlePointerMove = (e) => {
+        if (!isPointerDown) return;
+        
+        const currentX = e.clientX || e.touches[0].clientX;
+        const currentY = e.clientY || e.touches[0].clientY;
+        const deltaX = currentX - startX;
+        const deltaY = currentY - startY;
+        
+        if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+            state.isDragging = true;
+        }
+        
+        const proposedX = state.startRotation.x - deltaY / PAN_SENSITIVITY;
+        state.rotation.x = clamp(proposedX, -MAX_POLAR_ROT_DEG, MAX_POLAR_ROT_DEG);
+        state.rotation.y = state.startRotation.y + deltaX / PAN_SENSITIVITY;
+        
+        applyTransform();
+    };
+    
+    const handlePointerUp = () => {
+        isPointerDown = false;
+        setTimeout(() => {
+            state.isDragging = false;
+        }, 100);
+    };
+    
+    // 绑定事件
+    DOM.main.addEventListener('mousedown', handlePointerDown);
+    DOM.main.addEventListener('mousemove', handlePointerMove);
+    DOM.main.addEventListener('mouseup', handlePointerUp);
+    DOM.main.addEventListener('touchstart', handlePointerDown);
+    DOM.main.addEventListener('touchmove', handlePointerMove);
+    DOM.main.addEventListener('touchend', handlePointerUp);
+    
+    // 点击放大功能
+    DOM.items.forEach(item => {
+        item.addEventListener('click', (e) => {
+            if (state.isDragging) return;
+            
+            const img = item.querySelector('img');
+            const enlargedDiv = document.createElement('div');
+            enlargedDiv.className = 'enlarge';
+            enlargedDiv.innerHTML = `<img src="${img.src}" alt="AI写真">`;
+            
+            DOM.viewer.appendChild(enlargedDiv);
+            document.body.setAttribute('data-enlarging', 'true');
+            
+            // 点击遮罩关闭
+            DOM.scrim.addEventListener('click', () => {
+                document.body.setAttribute('data-enlarging', 'false');
+                setTimeout(() => {
+                    enlargedDiv.remove();
+                }, TRANSITION_DUR_MS);
+            }, { once: true });
+        });
+    });
+}
 function showMessageBoard() {
     switchPage('messagePage');
 }
@@ -328,14 +770,14 @@ function addClickEffects() {
         // 烟花效果
         createFirework(e.pageX, e.pageY);
 
-        // 随机添加流星雨
-        if (Math.random() < 0.3) {
-            createMeteor();
+        // 随机弹幕
+        if (Math.random() < 0.3) { // 30% 概率显示弹幕
+            createDanmaku(e.pageX, e.pageY);
         }
 
-        // 爱意弹幕
-        if (Math.random() < 0.5) {
-            createDanmaku(e.pageX, e.pageY);
+        // 流星雨效果
+        if (Math.random() < 0.1) { // 10% 概率显示流星
+            createMeteor();
         }
     });
 }
@@ -346,19 +788,31 @@ function createFirework(x, y) {
     const color = colors[Math.floor(Math.random() * colors.length)];
 
     for (let i = 0; i < 12; i++) {
-        const firework = $('<div class="firework"></div>');
-        firework.css({
+        const particle = $('<div class="firework-particle"></div>');
+        particle.css({
+            position: 'fixed',
             left: x + 'px',
             top: y + 'px',
+            width: '4px',
+            height: '4px',
             backgroundColor: color,
-            transform: `rotate(${i * 30}deg)`
+            borderRadius: '50%',
+            pointerEvents: 'none',
+            zIndex: 9999
         });
 
-        $('#fireworks-container').append(firework);
+        $('body').append(particle);
 
-        setTimeout(() => {
-            firework.remove();
-        }, 1000);
+        const angle = (i * 30) * Math.PI / 180;
+        const distance = 50 + Math.random() * 50;
+
+        particle.animate({
+            left: x + Math.cos(angle) * distance,
+            top: y + Math.sin(angle) * distance,
+            opacity: 0
+        }, 800, function () {
+            particle.remove();
+        });
     }
 }
 
@@ -369,15 +823,25 @@ function createMeteor() {
     const startY = -50;
 
     meteor.css({
+        position: 'fixed',
         left: startX + 'px',
-        top: startY + 'px'
+        top: startY + 'px',
+        width: '2px',
+        height: '20px',
+        background: 'linear-gradient(to bottom, transparent, #fff, transparent)',
+        borderRadius: '50%',
+        pointerEvents: 'none',
+        zIndex: 1000
     });
 
-    $('#meteor-container').append(meteor);
+    $('body').append(meteor);
 
-    setTimeout(() => {
+    meteor.animate({
+        left: startX + 200,
+        top: window.innerHeight + 50
+    }, 2000, function () {
         meteor.remove();
-    }, 2000);
+    });
 }
 
 // 创建爱意弹幕
@@ -385,17 +849,26 @@ function createDanmaku(x, y) {
     const message = loveMessages[Math.floor(Math.random() * loveMessages.length)];
     const danmaku = $('<div class="danmaku"></div>');
 
-    danmaku.text(message);
     danmaku.css({
-        left: (x - 50) + 'px',
-        top: y + 'px'
-    });
+        position: 'fixed',
+        left: x + 'px',
+        top: y + 'px',
+        color: '#ff6b9d',
+        fontSize: '18px',
+        fontWeight: 'bold',
+        pointerEvents: 'none',
+        zIndex: 9999,
+        textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
+    }).text(message);
 
-    $('#danmaku-container').append(danmaku);
+    $('body').append(danmaku);
 
-    setTimeout(() => {
+    danmaku.animate({
+        top: y - 100,
+        opacity: 0
+    }, 2000, function () {
         danmaku.remove();
-    }, 3000);
+    });
 }
 
 // 初始化留言板
@@ -412,20 +885,19 @@ function sendMessage() {
         return;
     }
 
-    const messageItem = $(`
-        <div class="message-item">
-            <div class="message-content">
-                <p>${messageText}</p>
-                <small class="text-white-50">${new Date().toLocaleString()}</small>
-            </div>
-        </div>
-    `);
+    // 保存留言
+    saveMessage(messageText);
 
-    $('#messagesList').prepend(messageItem);
+    // 清空输入框
     $('#messageInput').val('');
 
-    // 保存到本地存储
-    saveMessage(messageText);
+    // 重新加载留言
+    loadMessages();
+
+    // 显示发送成功提示
+    const toast = $('<div class="toast">留言发送成功！💕</div>');
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(() => toast.remove()), 2000);
 }
 
 // 发送礼物
@@ -433,20 +905,29 @@ function sendGift() {
     const gifts = ['🎁', '💐', '🌹', '💍', '🍰', '🎂', '🍫', '💝'];
     const gift = gifts[Math.floor(Math.random() * gifts.length)];
 
-    const messageItem = $(`
-        <div class="message-item">
-            <div class="message-content text-center">
-                <div style="font-size: 3rem;">${gift}</div>
-                <p>送给彩丽的礼物</p>
-                <small class="text-white-50">${new Date().toLocaleString()}</small>
-            </div>
-        </div>
-    `);
+    // 创建礼物动画
+    for (let i = 0; i < 10; i++) {
+        setTimeout(() => {
+            const giftElement = $('<div class="gift-animation">' + gift + '</div>');
+            giftElement.css({
+                position: 'fixed',
+                left: Math.random() * window.innerWidth + 'px',
+                top: window.innerHeight + 'px',
+                fontSize: '30px',
+                pointerEvents: 'none',
+                zIndex: 9999
+            });
 
-    $('#messagesList').prepend(messageItem);
+            $('body').append(giftElement);
 
-    // 特效
-    createFirework(window.innerWidth / 2, window.innerHeight / 2);
+            giftElement.animate({
+                top: -50,
+                opacity: 0
+            }, 3000, function () {
+                giftElement.remove();
+            });
+        }, i * 200);
+    }
 }
 
 // 发送表情
@@ -454,16 +935,29 @@ function sendEmoji() {
     const emojis = ['😘', '💕', '💖', '💗', '💓', '💝', '😍', '🥰', '😚', '💋'];
     const emoji = emojis[Math.floor(Math.random() * emojis.length)];
 
-    const messageItem = $(`
-        <div class="message-item">
-            <div class="message-content text-center">
-                <div style="font-size: 4rem;">${emoji}</div>
-                <small class="text-white-50">${new Date().toLocaleString()}</small>
-            </div>
-        </div>
-    `);
+    // 创建表情雨效果
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            const emojiElement = $('<div class="emoji-rain">' + emoji + '</div>');
+            emojiElement.css({
+                position: 'fixed',
+                left: Math.random() * window.innerWidth + 'px',
+                top: -30 + 'px',
+                fontSize: '25px',
+                pointerEvents: 'none',
+                zIndex: 9999
+            });
 
-    $('#messagesList').prepend(messageItem);
+            $('body').append(emojiElement);
+
+            emojiElement.animate({
+                top: window.innerHeight + 30,
+                opacity: 0.3
+            }, 4000, function () {
+                emojiElement.remove();
+            });
+        }, i * 100);
+    }
 }
 
 // 保存留言到本地存储
@@ -471,24 +965,25 @@ function saveMessage(message) {
     let messages = JSON.parse(localStorage.getItem('loveMessages') || '[]');
     messages.unshift({
         text: message,
-        timestamp: new Date().toISOString()
+        time: new Date().toLocaleString()
     });
-    localStorage.setItem('loveMessages', JSON.stringify(messages));
+    localStorage.setItem('loveMessages', JSON.stringify(messages.slice(0, 50))); // 只保留最新50条
 }
 
 // 加载留言
 function loadMessages() {
     const messages = JSON.parse(localStorage.getItem('loveMessages') || '[]');
+    const messageList = $('#messageList');
+    messageList.empty();
+
     messages.forEach(msg => {
         const messageItem = $(`
             <div class="message-item">
-                <div class="message-content">
-                    <p>${msg.text}</p>
-                    <small class="text-white-50">${new Date(msg.timestamp).toLocaleString()}</small>
-                </div>
+                <div class="message-text">${msg.text}</div>
+                <div class="message-time">${msg.time}</div>
             </div>
         `);
-        $('#messagesList').append(messageItem);
+        messageList.append(messageItem);
     });
 }
 
@@ -496,7 +991,7 @@ function loadMessages() {
 function addBackgroundAnimations() {
     setInterval(() => {
         // 随机添加飘落的心形
-        if (Math.random() < 0.1) {
+        if (Math.random() < 0.3) {
             createFloatingHeart();
         }
     }, 2000);
@@ -506,61 +1001,33 @@ function addBackgroundAnimations() {
 function createFloatingHeart() {
     const heart = $('<div style="position: fixed; font-size: 20px; color: rgba(255, 182, 193, 0.7); pointer-events: none; z-index: 1;">💕</div>');
     const startX = Math.random() * window.innerWidth;
+    const startY = -30;
 
     heart.css({
         left: startX + 'px',
-        top: '-30px',
-        animation: 'floatDown 8s linear forwards'
+        top: startY + 'px'
     });
 
     $('body').append(heart);
 
-    setTimeout(() => {
+    heart.animate({
+        top: window.innerHeight + 30,
+        left: startX + (Math.random() - 0.5) * 100
+    }, 8000, function () {
         heart.remove();
-    }, 8000);
+    });
 }
-
-// 添加CSS动画
-$('<style>').text(`
-    @keyframes floatDown {
-        0% {
-            transform: translateY(-30px) rotate(0deg);
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(${window.innerHeight + 50}px) rotate(360deg);
-            opacity: 0;
-        }
-    }
-`).appendTo('head');
 
 // 启动背景动画
 $(document).ready(function () {
     addBackgroundAnimations();
 });
 
-// 构造图片的 WebP 优先路径（构建产物）
-function getWebpCandidate(originalSrc) {
+// 获取WebP候选路径
+function getWebpCandidate(src) {
     try {
-        // 仅处理 images/pictures 下的资源
-        if (!originalSrc || originalSrc.indexOf('images/pictures/') !== 0) return originalSrc;
-        const webpPath = 'build/' + originalSrc.replace(/\.(jpg|jpeg|png|heic)$/i, '.webp');
-        return webpPath;
+        return 'build/' + src.replace(/\.(jpg|jpeg|png|heic)$/i, '.webp');
     } catch (e) {
-        return originalSrc;
+        return src;
     }
-}
-
-// 根据浏览器支持与资源可用性选择压缩音频候选
-function getOptimizedMusicCandidates(originalPath) {
-    const audio = document.createElement('audio');
-    const base = originalPath.replace(/\.[^/.]+$/, '');
-    const m4a = 'build/' + base + '.m4a';
-    const ogg = 'build/' + base + '.ogg';
-    const candidates = [];
-    // 按浏览器支持与优先级添加
-    if (audio.canPlayType('audio/mp4; codecs="mp4a.40.2"')) candidates.push(m4a);
-    if (audio.canPlayType('audio/ogg; codecs="vorbis"')) candidates.push(ogg);
-    candidates.push(originalPath);
-    return candidates;
 }

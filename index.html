@@ -7,12 +7,20 @@
     <title>彩丽宝贝生日快乐 💕</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <!-- 主页面 -->
     <div id="mainPage" class="page active">
+        <!-- 动态背景 -->
+        <div class="dynamic-background">
+            <canvas class="background-canvas"></canvas>
+            <div class="background-aura"></div>
+            <div class="background-overlay"></div>
+        </div>
+
         <!-- 音乐启动覆盖层 -->
         <div id="musicStartOverlay" class="music-start-overlay">
             <div class="music-start-content">
@@ -36,7 +44,7 @@
                 <div class="birthday-header mb-4">
                     <h1 class="birthday-title">
                         <i class="fas fa-heart text-danger"></i>
-                        亲爱的彩丽宝贝
+                        亲爱的老婆
                         <i class="fas fa-heart text-danger"></i>
                     </h1>
                     <p class="birthday-date">农历1991年8月18日</p>
@@ -61,6 +69,9 @@
                 <div class="action-buttons">
                     <button class="btn btn-romantic me-3" onclick="startPhotoShow()">
                         <i class="fas fa-images"></i> 我们的回忆
+                    </button>
+                    <button class="btn btn-romantic me-3" onclick="showPhotoWall()">
+                        <i class="fas fa-th"></i> AI写真墙
                     </button>
                     <button class="btn btn-romantic" onclick="showMessageBoard()">
                         <i class="fas fa-heart"></i> 留言板
@@ -87,31 +98,115 @@
                     <i class="fas fa-arrow-left"></i> 返回
                 </button>
                 <h3 class="text-white">我们的美好回忆</h3>
-                <button class="btn btn-outline-light" id="playPauseBtn" onclick="togglePlayPause()">
-                    <i class="fas fa-pause"></i>
-                </button>
+                <div></div>
             </div>
 
-            <div class="photo-display">
-                <div class="photo-card">
-                    <img id="currentPhoto" src="" alt="回忆照片" decoding="async" loading="eager" fetchpriority="high">
-                    <div class="photo-info">
-                        <p id="photoDate"></p>
-                        <p id="photoDescription"></p>
+            <!-- Swiper轮播 -->
+            <div class="swiper photo-swiper">
+                <div class="swiper-wrapper" id="photoSwiperWrapper">
+                    <!-- 照片将通过JavaScript动态添加 -->
+                </div>
+            </div>
+
+            <!-- 照片信息 -->
+            <div class="photo-info-panel">
+                <div class="photo-info-content">
+                    <p id="photoDate" class="photo-date"></p>
+                    <p id="photoDescription" class="photo-description"></p>
+                </div>
+            </div>
+
+            <!-- 底部控制器 -->
+            <div class="photo-controls-bottom">
+                <div class="controls-container">
+                    <!-- 进度条 -->
+                    <div class="progress-section">
+                        <div class="progress-bar">
+                            <div class="progress" id="photoProgress"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span id="currentIndex">1</span> / <span id="totalPhotos">0</span>
+                        </div>
                     </div>
-                    <!-- 转场遮罩层 -->
-                    <div class="transition-overlay" id="transitionOverlay"></div>
+
+                    <!-- 控制按钮 -->
+                    <div class="control-buttons">
+                        <button class="control-btn" onclick="previousPhoto()">
+                            <svg viewBox="0 0 24 24" class="btn-icon">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+                            </svg>
+                        </button>
+
+                        <button class="control-btn play-pause-btn" id="playPauseBtn" onclick="togglePlayPause()">
+                            <svg viewBox="0 0 24 24" class="btn-icon pause-icon">
+                                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                            </svg>
+                            <svg viewBox="0 0 24 24" class="btn-icon play-icon" style="display: none;">
+                                <path d="M8 5v14l11-7z" />
+                            </svg>
+                        </button>
+
+                        <button class="control-btn" onclick="nextPhoto()">
+                            <svg viewBox="0 0 24 24" class="btn-icon">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+                            </svg>
+                        </button>
+
+                        <button class="control-btn music-btn" onclick="togglePhotoMusic()">
+                            <svg viewBox="0 0 24 24" class="btn-icon music-on">
+                                <path
+                                    d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                            </svg>
+                            <svg viewBox="0 0 24 24" class="btn-icon music-off" style="display: none;">
+                                <path
+                                    d="M4.27 3L3 4.27l9 9v.28c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4v-1.73L19.73 21 21 19.73 4.27 3zM14 7h4V3h-6v5.18l2 2z" />
+                            </svg>
+                        </button>
+
+                        <button class="control-btn heart-btn" onclick="showLove()">
+                            <svg viewBox="0 0 24 24" class="btn-icon">
+                                <path
+                                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
+            </div>
+            <span class="text-white" id="currentTrackName"></span>
+            <button class="btn-outline-light" id="nextMusicBtn" onclick="nextMusic()" title="下一首">
+                <i class="fas fa-forward"></i>
+            </button>
+        </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- 照片墙页面 -->
+    <div id="photoWallPage" class="page">
+        <div class="photo-wall-container">
+            <div class="photo-wall-header">
+                <button class="btn btn-outline-light" onclick="backToMain()">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </button>
+                <h3 class="text-white">AI写真墙</h3>
+                <div></div>
             </div>
 
-            <div class="photo-controls">
-                <div class="progress-bar">
-                    <div class="progress" id="photoProgress"></div>
+            <main class="photo-wall-main">
+                <div class="stage">
+                    <div class="sphere" id="photoSphere">
+                        <!-- AI写真照片将通过JavaScript动态添加 -->
+                    </div>
                 </div>
-                <p class="text-white text-center mt-2">
-                    <span id="currentIndex">1</span> / <span id="totalPhotos">0</span>
-                </p>
-            </div>
+                <div class="overlay"></div>
+                <div class="overlay overlay--blur"></div>
+                <div class="viewer">
+                    <div class="scrim"></div>
+                    <div class="frame">
+                        <div class="enlarged"></div>
+                    </div>
+                </div>
+            </main>
         </div>
     </div>
 
@@ -160,6 +255,7 @@
     <!-- 脚本 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="photos.js"></script>
     <script src="script.js"></script>
